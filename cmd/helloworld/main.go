@@ -1,12 +1,15 @@
 package main
 
 import (
+	// replace with e.g. "gitlab.com/gomidi/rtmididrv" for real midi connections
+	driver "gitlab.com/gomidi/midi/testdrv"
+
 	"github.com/rainu/launchpad"
 	"log"
 )
 
 func main() {
-	pad, err := launchpad.NewLaunchpad()
+	pad, err := launchpad.NewLaunchpad(driver.New("fake"))
 	if err != nil {
 		log.Fatalf("error while openning connection to launchpad: %v", err)
 	}

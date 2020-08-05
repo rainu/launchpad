@@ -8,15 +8,42 @@ Initialize a new Launchpad. If there are no currently connected Launchpad
 device, initialization will fail with an error. You can fake a device by
 creating an input and output MIDI device and name them as Launchpad.
 
-```go
-pad, err := launchpad.NewLaunchpad()
-if err != nil {
-    log.Fatalf("Error initializing launchpad: %v", err)
-}
-defer pad.Close()
+## Drivers
 
-// turn off all of the lights
-pad.Clear()
+For "cable" communication you need a Driver to connect with the MIDI system of your OS. 
+Currently there are two multi-platform drivers available:
+
+* package ```gitlab.com/gomidi/rtmididrv``` based on rtmidi
+* package ```gitlab.com/gomidi/portmididrv``` based on portmidi
+
+Portmidi is required to use this package.
+
+```
+$ apt-get install libportmidi-dev
+# or
+$ brew install portmidi
+# or 
+$ yay -S portmidi
+```
+
+```go
+package main
+
+import (
+    "github.com/rainu/launchpad"
+	driver "gitlab.com/gomidi/portmididrv"
+	"log"
+)
+func main() {
+    pad, err := launchpad.NewLaunchpad(driver.New())
+    if err != nil {
+        log.Fatalf("Error initializing launchpad: %v", err)
+    }
+    defer pad.Close()
+    
+    // turn off all of the lights
+    pad.Clear()
+}
 ```
 
 ### Coordinate system
@@ -49,24 +76,33 @@ The coordinate system is illustrated below.
 A simple program to light every touch:
 
 ```go
-pad, err := launchpad.NewLaunchpad()
-if err != nil {
-    log.Fatal(err)
-}
-defer pad.Close()
+package main
 
-pad.Clear()
-
-hits, err := pad.ListenToHits()
-if err != nil {
-    log.Fatal(err)
-}
-
-for {
-	select {
-	case hit := <-hits:
-		pad.Light(hit.X, hit.Y, 3, 3)
-	}
+import (
+    "github.com/rainu/launchpad"
+    driver "gitlab.com/gomidi/portmididrv"
+    "log"
+)
+func main() {
+    pad, err := launchpad.NewLaunchpad(driver.New())
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer pad.Close()
+    
+    pad.Clear()
+    
+    hits, err := pad.ListenToHits()
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    for {
+        select {
+        case hit := <-hits:
+            pad.Light(hit.X, hit.Y, 3, 3)
+        }
+    }
 }
 ```
 
@@ -75,23 +111,32 @@ for {
 A simple program to write text on the launchpad
 
 ```go
-pad, err := launchpad.NewLaunchpad()
-if err != nil {
-    log.Fatal(err)
-}
-defer pad.Close()
+package main
 
-pad.Clear()
-
-// Send Text-Loop
-pad.Text(3, 0).Add(7, "Hello World!").Perform()
-
-marker, err := pad.ListenToScrollTextEndMarker()
-if err != nil {
-    log.Fatal(err)
-}
-for {
-    <-marker
-    log.Printf("Scrolling text is ended now.")
+import (
+    "github.com/rainu/launchpad"
+    driver "gitlab.com/gomidi/portmididrv"
+    "log"
+)
+func main() {
+    pad, err := launchpad.NewLaunchpad(driver.New())
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer pad.Close()
+    
+    pad.Clear()
+    
+    // Send Text-Loop
+    pad.Text(3, 0).Add(7, "Hello World!").Perform()
+    
+    marker, err := pad.ListenToScrollTextEndMarker()
+    if err != nil {
+        log.Fatal(err)
+    }
+    for {
+        <-marker
+        log.Printf("Scrolling text is ended now.")
+    }
 }
 ```

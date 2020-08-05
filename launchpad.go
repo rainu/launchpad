@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gitlab.com/gomidi/midi"
 	"gitlab.com/gomidi/midi/reader"
-	driver "gitlab.com/gomidi/rtmididrv"
 	"strings"
 	"sync"
 )
@@ -49,13 +48,9 @@ type Launchpad interface {
 
 	// In will return the underlying midi input stream.
 	In() midi.In
-
-	// Driver will return the underlying midi driver.
-	Driver() midi.Driver
 }
 
 type launchpad struct {
-	driver       midi.Driver
 	inputStream  midi.In
 	outputStream midi.Out
 
@@ -66,32 +61,26 @@ type launchpad struct {
 
 // NewLaunchpad will create a new Launchpad instance. It will discover for connected
 // Launchpads. If there is no Launchpad found, an error will returned.
-func NewLaunchpad() (Launchpad, error) {
-	drv, in, out, err := discover()
+func NewLaunchpad(driver midi.Driver) (Launchpad, error) {
+	in, out, err := discover(driver)
 	if err != nil {
 		return nil, err
 	}
 
 	return &launchpad{
-		driver:       drv,
 		inputStream:  in,
 		outputStream: out,
 	}, nil
 }
 
-func discover() (midi.Driver, midi.In, midi.Out, error) {
-	drv, err := driver.New()
+func discover(driver midi.Driver) (midi.In, midi.Out, error) {
+	ins, err := driver.Ins()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
-
-	ins, err := drv.Ins()
+	outs, err := driver.Outs()
 	if err != nil {
-		return nil, nil, nil, err
-	}
-	outs, err := drv.Outs()
-	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	var in midi.In
@@ -111,17 +100,13 @@ func discover() (midi.Driver, midi.In, midi.Out, error) {
 	}
 
 	if in == nil {
-		return nil, nil, nil, fmt.Errorf("no lanchpad input stream connected")
+		return nil, nil, fmt.Errorf("no lanchpad input stream connected")
 	}
 	if out == nil {
-		return nil, nil, nil, fmt.Errorf("no lanchpad output stream connected")
+		return nil, nil, fmt.Errorf("no lanchpad output stream connected")
 	}
 
-	return drv, in, out, nil
-}
-
-func (l *launchpad) Driver() midi.Driver {
-	return l.driver
+	return in, out, nil
 }
 
 func (l *launchpad) Out() midi.Out {
@@ -135,9 +120,6 @@ func (l *launchpad) In() midi.In {
 func (l *launchpad) Close() error {
 	errMessages := make([]string, 0, 3)
 
-	if err := l.driver.Close(); err != nil {
-		errMessages = append(errMessages, err.Error())
-	}
 	if err := l.inputStream.Close(); err != nil {
 		errMessages = append(errMessages, err.Error())
 	}
