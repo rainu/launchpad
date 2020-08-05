@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"gitlab.com/gomidi/midi"
 	"gitlab.com/gomidi/midi/reader"
-	driver "gitlab.com/gomidi/rtmididrv"
+	driver "gitlab.com/gomidi/portmididrv"
 	"strings"
 	"sync"
 )
