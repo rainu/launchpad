@@ -20,22 +20,22 @@ type scrollingTextBuilder struct {
 	outputStream midi.Out
 }
 
-func (l *launchpad) Text(g uint8, r uint8) ScrollingTextBuilder {
+func (l *launchpad) Text(g int, r int) ScrollingTextBuilder {
 	return l.text(g, r, false)
 }
 
-func (l *launchpad) TextLoop(g uint8, r uint8) ScrollingTextBuilder {
+func (l *launchpad) TextLoop(g int, r int) ScrollingTextBuilder {
 	return l.text(g, r, true)
 }
 
-func (l *launchpad) text(g uint8, r uint8, loop bool) ScrollingTextBuilder {
+func (l *launchpad) text(g int, r int, loop bool) ScrollingTextBuilder {
 	color := 16*g + r + 8 + 4
 	if loop {
 		color += 64
 	}
 
 	return &scrollingTextBuilder{
-		Seq:          []byte{0xF0, 0x00, 0x20, 0x29, 0x09, color},
+		Seq:          []byte{0xF0, 0x00, 0x20, 0x29, 0x09, byte(color)},
 		outputStream: l.outputStream,
 	}
 }

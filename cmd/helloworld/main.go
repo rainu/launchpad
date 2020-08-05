@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/rakyll/launchpad"
+	"github.com/rainu/launchpad"
 	"log"
 )
 

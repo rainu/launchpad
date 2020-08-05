@@ -25,16 +25,16 @@ type Launchpad interface {
 	// x and y are [0, 8], g and r are [0, 3]
 	// Note that x=8 corresponds to the round scene buttons on the right side of the device,
 	// and y=8 corresponds to the round buttons on the top of the device.
-	Light(x, y, g, r uint8) error
+	Light(x, y, g, r int) error
 
 	// Text will return a scrolling text builder whether you can build and
 	// perform an text with the given color which will be scrolled on the launchpad.
-	Text(g uint8, r uint8) ScrollingTextBuilder
+	Text(g int, r int) ScrollingTextBuilder
 
 	// TextLoop will return a scrolling text builder whether you can build and
 	// perform an text with the given color which will be scrolled endless on the launchpad.
 	// If you want to stop an text loop you have to build and execute an empty textLoop!
-	TextLoop(g uint8, r uint8) ScrollingTextBuilder
+	TextLoop(g int, r int) ScrollingTextBuilder
 
 	// Clear turns off all the LEDs on the Launchpad.
 	Clear() error

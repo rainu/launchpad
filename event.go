@@ -8,8 +8,8 @@ import (
 )
 
 type Hit struct {
-	X    uint8
-	Y    uint8
+	X    int
+	Y    int
 	Down bool
 }
 
@@ -72,7 +72,7 @@ func (l *launchpad) ListenToHits() (<-chan Hit, error) {
 			if controlChange.Controller() >= 104 && controlChange.Controller() <= 112 {
 				isHit = true
 
-				hit.X = controlChange.Controller() - 104
+				hit.X = int(controlChange.Controller()) - 104
 				hit.Y = 8
 				hit.Down = controlChange.Value() == 127
 			}
@@ -80,14 +80,14 @@ func (l *launchpad) ListenToHits() (<-chan Hit, error) {
 			isHit = true
 			hit.Down = true
 
-			hit.X = noteOn.Key() % 16
-			hit.Y = (noteOn.Key() - hit.X) / 16
+			hit.X = int(noteOn.Key()) % 16
+			hit.Y = (int(noteOn.Key()) - hit.X) / 16
 		} else if noteOn, ok := msg.(channel.NoteOff); ok {
 			isHit = true
 			hit.Down = false
 
-			hit.X = noteOn.Key() % 16
-			hit.Y = (noteOn.Key() - hit.X) / 16
+			hit.X = int(noteOn.Key()) % 16
+			hit.Y = (int(noteOn.Key()) - hit.X) / 16
 		}
 
 		if isHit {
