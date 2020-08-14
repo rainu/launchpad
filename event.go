@@ -1,7 +1,6 @@
 package launchpad
 
 import (
-	"fmt"
 	"gitlab.com/gomidi/midi"
 	"gitlab.com/gomidi/midi/midimessage/channel"
 	"gitlab.com/gomidi/midi/reader"
@@ -93,8 +92,6 @@ func (l *launchpad) ListenToHits() (<-chan Hit, error) {
 		if isHit {
 			hitChan <- hit
 		}
-
-		fmt.Printf("got %s\n", msg)
 	})
 
 	return hitChan, nil
