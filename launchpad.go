@@ -4,9 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gitlab.com/gomidi/midi"
-	"gitlab.com/gomidi/midi/reader"
 	"strings"
-	"sync"
 )
 
 // Launchpad represents a device with an input and output MIDI stream.
@@ -20,20 +18,20 @@ type Launchpad interface {
 	// It will return an error if listening initialisation failed.
 	ListenToScrollTextEndMarker() (<-chan interface{}, error)
 
-	// Light lights the button at x,y with the given green and red values.
-	// x and y are [0, 8], g and r are [0, 3]
+	// Light lights the button at x,y with the given color.
+	// x and y are [0, 8] and color can be a ColorS or ColorMK2 / ColorMK2RGB (depends on connected launchpad)
 	// Note that x=8 corresponds to the round scene buttons on the right side of the device,
 	// and y=8 corresponds to the round buttons on the top of the device.
-	Light(x, y, g, r int) error
+	Light(x, y int, color Color) error
 
 	// Text will return a scrolling text builder whether you can build and
-	// perform an text with the given color which will be scrolled on the launchpad.
-	Text(g int, r int) ScrollingTextBuilder
+	// perform an text with the given color (for Launchpad MK2 only ColorMK2 will work) which will be scrolled on the launchpad.
+	Text(color Color) ScrollingTextBuilder
 
 	// TextLoop will return a scrolling text builder whether you can build and
-	// perform an text with the given color which will be scrolled endless on the launchpad.
+	// perform an text with the given color (for Launchpad MK2 only ColorMK2 will work) which will be scrolled endless on the launchpad.
 	// If you want to stop an text loop you have to build and execute an empty textLoop!
-	TextLoop(g int, r int) ScrollingTextBuilder
+	TextLoop(color Color) ScrollingTextBuilder
 
 	// Clear turns off all the LEDs on the Launchpad.
 	Clear() error
@@ -50,96 +48,86 @@ type Launchpad interface {
 	In() midi.In
 }
 
-type launchpad struct {
-	inputStream  midi.In
-	outputStream midi.Out
+//Color can be ColorS for "Launchpad S"-Devices and ColorMK2 or ColorMK2RGB for "Launchpad MK2"-Devices
+type Color interface {
+	AsBytes() []byte
+}
 
-	isListening   bool
-	listenerMutex sync.RWMutex
-	listener      []func(pos *reader.Position, msg midi.Message)
+type Hit struct {
+	X    int
+	Y    int
+	Down bool
+}
+
+// ScrollingTextBuilder is used to build and display an scrolling text on the Launchpad.
+type ScrollingTextBuilder interface {
+	// Add adds a text snipped with a given speed to the builder.
+	// The speed can be a value from 1-7. The text must be ASCII
+	// characters! Otherwise the result could be weired.
+	Add(speed byte, text string) ScrollingTextBuilder
+
+	// Perform sends the pre-built scrolling text to the launchpad.
+	Perform() error
 }
 
 // NewLaunchpad will create a new Launchpad instance. It will discover for connected
 // Launchpads. If there is no Launchpad found, an error will returned.
 func NewLaunchpad(driver midi.Driver) (Launchpad, error) {
-	in, out, err := discover(driver)
+	backend, err := discover(driver)
 	if err != nil {
 		return nil, err
 	}
 
-	return &launchpad{
-		inputStream:  in,
-		outputStream: out,
-	}, nil
+	return backend, nil
 }
 
-func discover(driver midi.Driver) (midi.In, midi.Out, error) {
+func discover(driver midi.Driver) (Launchpad, error) {
 	ins, err := driver.Ins()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	outs, err := driver.Outs()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var in midi.In
 	var out midi.Out
 
 	for i, _ := range ins {
-		if strings.Contains(ins[i].String(), "Launchpad S") {
+		if strings.Contains(ins[i].String(), "Launchpad") {
 			in = ins[i]
 			break
 		}
 	}
 	for i, _ := range outs {
-		if strings.Contains(outs[i].String(), "Launchpad S") {
+		if strings.Contains(outs[i].String(), "Launchpad") {
 			out = outs[i]
 			break
 		}
 	}
 
 	if in == nil {
-		return nil, nil, fmt.Errorf("no lanchpad input stream connected")
+		return nil, fmt.Errorf("no lanchpad input stream connected")
 	}
 	if out == nil {
-		return nil, nil, fmt.Errorf("no lanchpad output stream connected")
+		return nil, fmt.Errorf("no lanchpad output stream connected")
 	}
 
-	return in, out, nil
-}
+	if strings.Contains(in.String(), "Launchpad S") {
+		return &LaunchpadS{
+			inputStream:  in,
+			outputStream: out,
+		}, nil
+	} else if strings.Contains(in.String(), "Launchpad MK2") {
+		// Switch to the session mode.
+		out.Write([]byte{0xf0, 0x00, 0x20, 0x29, 0x02, 0x18, 0x22, 0x00, 0xf7})
 
-func (l *launchpad) Out() midi.Out {
-	return l.outputStream
-}
-
-func (l *launchpad) In() midi.In {
-	return l.inputStream
-}
-
-func (l *launchpad) Close() error {
-	errMessages := make([]string, 0, 3)
-
-	if err := l.inputStream.Close(); err != nil {
-		errMessages = append(errMessages, err.Error())
-	}
-	if err := l.outputStream.Close(); err != nil {
-		errMessages = append(errMessages, err.Error())
+		return &LaunchpadMK2{
+			inputStream:  in,
+			outputStream: out,
+		}, nil
 	}
 
-	if len(errMessages) > 0 {
-		return errors.New(strings.Join(errMessages, ";"))
-	}
-
-	return nil
-}
-
-func (l *launchpad) write(b []byte) (int, error) {
-	if !l.outputStream.IsOpen() {
-		if err := l.outputStream.Open(); err != nil {
-			return -1, err
-		}
-	}
-
-	return l.outputStream.Write(b)
+	return nil, errors.New("unsupported launchpad type")
 }

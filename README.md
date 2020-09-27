@@ -1,7 +1,7 @@
 # launchpad 
-A package allows you to talk to your Novation Launchpad S in Go. Light buttons or read your touches.
+A package allows you to talk to your Novation Launchpad S or Launchpad MK2 in Go. Light buttons or read your touches.
 
-This library is currently only working with Launchpad S (Green-Red Launchpads)
+This library is currently only working with Launchpad S (Green-Red Launchpads) and Launchpad MK2 (RGB)
 
 ## Usage
 Initialize a new Launchpad. If there are no currently connected Launchpad
@@ -53,6 +53,7 @@ The coordinate system is illustrated below.
 +--------- arrow keys -----------+  +--- mode keys ---+
 {0, 8} {1, 8} {2, 8} {3, 8} {4, 8} {5, 8} {6, 8} {7, 8} | ableton
 ----------------------------------------------------------------
+----------------------------------------------------------------
 {0, 0} {1, 0} {2, 0} {3, 0} {4, 0} {5, 0} {6, 0} {7, 0} | {8, 0} vol
 ----------------------------------------------------------------
 {0, 1} {1, 1} {2, 1} {3, 1} {4, 1} {5, 1} {6, 1} {7, 1} | {8, 1} pan
@@ -100,7 +101,7 @@ func main() {
     for {
         select {
         case hit := <-hits:
-            pad.Light(hit.X, hit.Y, 3, 3)
+            pad.Light(hit.X, hit.Y, launchpad.ColorS{3, 3})
         }
     }
 }
@@ -128,7 +129,7 @@ func main() {
     pad.Clear()
     
     // Send Text-Loop
-    pad.Text(3, 0).Add(7, "Hello World!").Perform()
+    pad.Text(launchpad.ColorS{3, 0}).Add(7, "Hello World!").Perform()
     
     marker, err := pad.ListenToScrollTextEndMarker()
     if err != nil {

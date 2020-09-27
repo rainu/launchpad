@@ -18,9 +18,9 @@ func main() {
 	pad.Clear()
 
 	// Set <0,0> to yellow.
-	pad.Light(0, 0, 2, 2)
+	pad.Light(0, 0, launchpad.ColorS{2, 2})
 
-	pad.Text(3, 0).
+	pad.Text(launchpad.ColorS{3, 0}).
 		Add(7, "Hello ").
 		Add(1, "World!").
 		Perform()
@@ -41,9 +41,9 @@ func main() {
 			log.Printf("Button pressed at <x=%d, y=%d>", hit.X, hit.Y)
 			// Turn to green.
 			if hit.Down {
-				pad.Light(hit.X, hit.Y, 0, 3)
+				pad.Light(hit.X, hit.Y, launchpad.ColorS{0, 3})
 			} else {
-				pad.Light(hit.X, hit.Y, 3, 0)
+				pad.Light(hit.X, hit.Y, launchpad.ColorS{3, 0})
 			}
 		case <-marker:
 			log.Print("Text ends")

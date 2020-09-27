@@ -6,13 +6,7 @@ import (
 	"gitlab.com/gomidi/midi/reader"
 )
 
-type Hit struct {
-	X    int
-	Y    int
-	Down bool
-}
-
-func (l *launchpad) listen() error {
+func (l *LaunchpadS) listen() error {
 	rd := reader.New(
 		reader.NoLogger(),
 		// write every message to the out port
@@ -33,7 +27,7 @@ func (l *launchpad) listen() error {
 	return nil
 }
 
-func (l *launchpad) handleMidiMessage(pos *reader.Position, msg midi.Message) {
+func (l *LaunchpadS) handleMidiMessage(pos *reader.Position, msg midi.Message) {
 	l.listenerMutex.RLock()
 	defer l.listenerMutex.RUnlock()
 
@@ -43,14 +37,14 @@ func (l *launchpad) handleMidiMessage(pos *reader.Position, msg midi.Message) {
 	}
 }
 
-func (l *launchpad) addMidiMessageListener(listener func(pos *reader.Position, msg midi.Message)) {
+func (l *LaunchpadS) addMidiMessageListener(listener func(pos *reader.Position, msg midi.Message)) {
 	l.listenerMutex.Lock()
 	defer l.listenerMutex.Unlock()
 
 	l.listener = append(l.listener, listener)
 }
 
-func (l *launchpad) ListenToHits() (<-chan Hit, error) {
+func (l *LaunchpadS) ListenToHits() (<-chan Hit, error) {
 	if !l.isListening {
 		if err := l.listen(); err != nil {
 			return nil, err
@@ -97,7 +91,7 @@ func (l *launchpad) ListenToHits() (<-chan Hit, error) {
 	return hitChan, nil
 }
 
-func (l *launchpad) ListenToScrollTextEndMarker() (<-chan interface{}, error) {
+func (l *LaunchpadS) ListenToScrollTextEndMarker() (<-chan interface{}, error) {
 	if !l.isListening {
 		if err := l.listen(); err != nil {
 			return nil, err
